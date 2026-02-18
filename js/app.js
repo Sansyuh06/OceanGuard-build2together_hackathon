@@ -137,6 +137,16 @@ const App = (() => {
         updateCreditsTab();
         updateLeaderboard();
 
+        // Fetch LIVE marine data from Open-Meteo API (free, no key)
+        const livePanel = document.getElementById('live-data-panel');
+        if (livePanel) {
+            livePanel.innerHTML = '<div class="live-header"><span class="live-dot live-loading"></span><span>Fetching live marine data...</span></div>';
+            LiveAPI.fetchRouteData(portA, portB).then(liveData => {
+                LiveAPI.renderLivePanel(portA, portB, liveData);
+                currentAnalysis.liveData = liveData;
+            });
+        }
+
         // Flash success
         const btn = document.getElementById('btn-analyze');
         btn.textContent = '✓ Analysis Complete';

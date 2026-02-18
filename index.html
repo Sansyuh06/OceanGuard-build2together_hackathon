@@ -1,272 +1,311 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OceanGuard — Ecological Transition Intelligence</title>
-  <meta name="description" content="OceanGuard: Predictive ballast water risk assessment, ecological compatibility scoring, and treatment recommendations for sustainable maritime operations. SDG 14.">
+  <meta name="description"
+    content="OceanGuard: Predictive ballast water risk assessment, ecological compatibility scoring, and treatment recommendations for sustainable maritime operations. SDG 14.">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
+
 <body>
 
-<!-- ========== HEADER ========== -->
-<header>
-  <div class="logo">
-    <i class="fa-solid fa-water"></i>
-    <span>OceanGuard</span>
-  </div>
-  <nav>
-    <button class="nav-btn active" data-tab="route">🗺️ Route Map</button>
-    <button class="nav-btn" data-tab="risk">📊 Risk Score</button>
-    <button class="nav-btn" data-tab="treatment">🧬 Treatment</button>
-    <button class="nav-btn" data-tab="credits">🏆 Eco Credits</button>
-    <button class="nav-btn" data-tab="reports">📄 Reports</button>
-  </nav>
-</header>
+  <!-- ========== HEADER ========== -->
+  <header>
+    <div class="logo">
+      <i class="fa-solid fa-water"></i>
+      <span>OceanGuard</span>
+    </div>
+    <nav>
+      <button class="nav-btn active" data-tab="route">🗺️ Route Map</button>
+      <button class="nav-btn" data-tab="risk">📊 Risk Score</button>
+      <button class="nav-btn" data-tab="treatment">🧬 Treatment</button>
+      <button class="nav-btn" data-tab="credits">🏆 Eco Credits</button>
+      <button class="nav-btn" data-tab="reports">📄 Reports</button>
+    </nav>
+  </header>
 
-<!-- ========== TAB 1: ROUTE MAP ========== -->
-<section id="tab-route" class="tab-content active">
-  <div class="route-container">
-    <div class="route-sidebar">
+  <!-- ========== TAB 1: ROUTE MAP ========== -->
+  <section id="tab-route" class="tab-content active">
+    <div class="route-container">
+      <div class="route-sidebar">
 
-      <div class="sidebar-card">
-        <h3>🌊 Ballast Intake (Port A)</h3>
-        <div class="form-group">
-          <label for="port-a">Select intake port</label>
-          <select id="port-a"><option value="">— Choose Port —</option></select>
+        <div class="sidebar-card">
+          <h3>🌊 Ballast Intake (Port A)</h3>
+          <div class="form-group">
+            <label for="port-a">Select intake port</label>
+            <select id="port-a">
+              <option value="">— Choose Port —</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="sidebar-card">
+          <h3>📍 Discharge Destination (Port B)</h3>
+          <div class="form-group">
+            <label for="port-b">Select discharge port</label>
+            <select id="port-b">
+              <option value="">— Choose Port —</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="sidebar-card">
+          <h3>⚙️ Treatment Parameters</h3>
+          <div class="form-group">
+            <label for="treatment-type">Treatment Type</label>
+            <select id="treatment-type">
+              <option value="uv">UV Irradiation</option>
+              <option value="chemical">Electrochlorination</option>
+              <option value="hybrid" selected>Hybrid (UV + Chemical)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="uv-dose">UV Dose (mJ/cm²)</label>
+            <input type="range" id="uv-dose" min="0" max="120" value="60" step="5">
+            <div class="slider-label"><span>0</span><span class="slider-val" id="uv-dose-val">60</span><span>120</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="tro-level">TRO Level (mg/L)</label>
+            <input type="range" id="tro-level" min="0" max="0.3" value="0.08" step="0.01">
+            <div class="slider-label"><span>0</span><span class="slider-val"
+                id="tro-level-val">0.08</span><span>0.3</span></div>
+          </div>
+          <div class="form-group">
+            <label for="organism-count">Estimated Organism Count (/m³)</label>
+            <input type="range" id="organism-count" min="0" max="50" value="8" step="1">
+            <div class="slider-label"><span>0</span><span class="slider-val"
+                id="organism-count-val">8</span><span>50</span></div>
+          </div>
+        </div>
+
+        <div class="sidebar-card">
+          <h3>🦠 Detected Microorganisms</h3>
+          <div id="organism-list" class="organism-checklist"></div>
+        </div>
+
+        <button class="btn-analyze" id="btn-analyze">Analyze Route</button>
+      </div>
+
+      <div class="map-wrapper">
+        <div id="map"></div>
+        <div id="live-data-panel" class="live-panel"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== TAB 2: RISK SCORE ========== -->
+  <section id="tab-risk" class="tab-content">
+    <div class="risk-container">
+      <div class="risk-header">
+        <h2>Discharge Risk Assessment</h2>
+        <div id="risk-route-info">
+          <span class="route-label">Select ports</span>
+          <span class="route-arrow">→</span>
+          <span class="route-label">and analyze</span>
         </div>
       </div>
 
-      <div class="sidebar-card">
-        <h3>📍 Discharge Destination (Port B)</h3>
-        <div class="form-group">
-          <label for="port-b">Select discharge port</label>
-          <select id="port-b"><option value="">— Choose Port —</option></select>
+      <div class="gauge-section">
+        <div class="gauge-wrapper">
+          <svg class="gauge-svg" width="180" height="180" viewBox="0 0 160 160">
+            <circle class="gauge-bg" cx="80" cy="80" r="70" />
+            <circle class="gauge-circle" id="gauge-circle" cx="80" cy="80" r="70" stroke-dasharray="440"
+              stroke-dashoffset="440" />
+            <text class="gauge-text" id="gauge-text" x="80" y="75" transform="rotate(90 80 80)">0</text>
+            <text class="gauge-label" x="80" y="100" transform="rotate(90 80 80)">ECO SCORE</text>
+          </svg>
+        </div>
+        <div id="risk-verdict" style="color:#64748b;background:rgba(255,255,255,0.03)">
+          AWAITING ANALYSIS
         </div>
       </div>
 
-      <div class="sidebar-card">
-        <h3>⚙️ Treatment Parameters</h3>
-        <div class="form-group">
-          <label for="treatment-type">Treatment Type</label>
-          <select id="treatment-type">
-            <option value="uv">UV Irradiation</option>
-            <option value="chemical">Electrochlorination</option>
-            <option value="hybrid" selected>Hybrid (UV + Chemical)</option>
-          </select>
+      <div class="risk-breakdown">
+        <div class="breakdown-item">
+          <div class="breakdown-label"><span>Biological Risk</span><span id="bio-risk-val">0</span></div>
+          <div class="breakdown-bar-bg">
+            <div class="breakdown-bar" id="bio-risk-bar" style="width:0%"></div>
+          </div>
         </div>
-        <div class="form-group">
-          <label for="uv-dose">UV Dose (mJ/cm²)</label>
-          <input type="range" id="uv-dose" min="0" max="120" value="60" step="5">
-          <div class="slider-label"><span>0</span><span class="slider-val" id="uv-dose-val">60</span><span>120</span></div>
+        <div class="breakdown-item">
+          <div class="breakdown-label"><span>Chemical Risk</span><span id="chem-risk-val">0</span></div>
+          <div class="breakdown-bar-bg">
+            <div class="breakdown-bar" id="chem-risk-bar" style="width:0%"></div>
+          </div>
         </div>
-        <div class="form-group">
-          <label for="tro-level">TRO Level (mg/L)</label>
-          <input type="range" id="tro-level" min="0" max="0.3" value="0.08" step="0.01">
-          <div class="slider-label"><span>0</span><span class="slider-val" id="tro-level-val">0.08</span><span>0.3</span></div>
+        <div class="breakdown-item">
+          <div class="breakdown-label"><span>Ecological Risk</span><span id="eco-risk-val">0</span></div>
+          <div class="breakdown-bar-bg">
+            <div class="breakdown-bar" id="eco-risk-bar" style="width:0%"></div>
+          </div>
         </div>
-        <div class="form-group">
-          <label for="organism-count">Estimated Organism Count (/m³)</label>
-          <input type="range" id="organism-count" min="0" max="50" value="8" step="1">
-          <div class="slider-label"><span>0</span><span class="slider-val" id="organism-count-val">8</span><span>50</span></div>
+        <div class="breakdown-item">
+          <div class="breakdown-label"><span>Compatibility Risk</span><span id="compat-risk-val">0</span></div>
+          <div class="breakdown-bar-bg">
+            <div class="breakdown-bar" id="compat-risk-bar" style="width:0%"></div>
+          </div>
         </div>
       </div>
 
-      <div class="sidebar-card">
-        <h3>🦠 Detected Microorganisms</h3>
-        <div id="organism-list" class="organism-checklist"></div>
+      <div class="comparison-section">
+        <h3>Port Environmental Comparison</h3>
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>Parameter</th>
+              <th>Port A (Intake)</th>
+              <th>Port B (Discharge)</th>
+              <th>Difference</th>
+            </tr>
+          </thead>
+          <tbody id="comparison-tbody">
+            <tr>
+              <td colspan="4" style="text-align:center;color:var(--text-muted)">Run analysis to see comparison</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
-      <button class="btn-analyze" id="btn-analyze">Analyze Route</button>
-    </div>
-
-    <div class="map-wrapper">
-      <div id="map"></div>
-    </div>
-  </div>
-</section>
-
-<!-- ========== TAB 2: RISK SCORE ========== -->
-<section id="tab-risk" class="tab-content">
-  <div class="risk-container">
-    <div class="risk-header">
-      <h2>Discharge Risk Assessment</h2>
-      <div id="risk-route-info">
-        <span class="route-label">Select ports</span>
-        <span class="route-arrow">→</span>
-        <span class="route-label">and analyze</span>
-      </div>
-    </div>
-
-    <div class="gauge-section">
-      <div class="gauge-wrapper">
-        <svg class="gauge-svg" width="180" height="180" viewBox="0 0 160 160">
-          <circle class="gauge-bg" cx="80" cy="80" r="70" />
-          <circle class="gauge-circle" id="gauge-circle" cx="80" cy="80" r="70"
-                  stroke-dasharray="440" stroke-dashoffset="440" />
-          <text class="gauge-text" id="gauge-text" x="80" y="75"
-                transform="rotate(90 80 80)">0</text>
-          <text class="gauge-label" x="80" y="100"
-                transform="rotate(90 80 80)">ECO SCORE</text>
-        </svg>
-      </div>
-      <div id="risk-verdict" style="color:#64748b;background:rgba(255,255,255,0.03)">
-        AWAITING ANALYSIS
+      <div class="risk-chart-section">
+        <div class="risk-chart-wrap">
+          <canvas id="risk-chart"></canvas>
+        </div>
       </div>
     </div>
+  </section>
 
-    <div class="risk-breakdown">
-      <div class="breakdown-item">
-        <div class="breakdown-label"><span>Biological Risk</span><span id="bio-risk-val">0</span></div>
-        <div class="breakdown-bar-bg"><div class="breakdown-bar" id="bio-risk-bar" style="width:0%"></div></div>
-      </div>
-      <div class="breakdown-item">
-        <div class="breakdown-label"><span>Chemical Risk</span><span id="chem-risk-val">0</span></div>
-        <div class="breakdown-bar-bg"><div class="breakdown-bar" id="chem-risk-bar" style="width:0%"></div></div>
-      </div>
-      <div class="breakdown-item">
-        <div class="breakdown-label"><span>Ecological Risk</span><span id="eco-risk-val">0</span></div>
-        <div class="breakdown-bar-bg"><div class="breakdown-bar" id="eco-risk-bar" style="width:0%"></div></div>
-      </div>
-      <div class="breakdown-item">
-        <div class="breakdown-label"><span>Compatibility Risk</span><span id="compat-risk-val">0</span></div>
-        <div class="breakdown-bar-bg"><div class="breakdown-bar" id="compat-risk-bar" style="width:0%"></div></div>
-      </div>
-    </div>
+  <!-- ========== TAB 3: TREATMENT ========== -->
+  <section id="tab-treatment" class="tab-content">
+    <div class="treatment-container">
+      <h2 style="margin-bottom:24px">Treatment Advisory</h2>
 
-    <div class="comparison-section">
-      <h3>Port Environmental Comparison</h3>
-      <table class="comparison-table">
-        <thead><tr><th>Parameter</th><th>Port A (Intake)</th><th>Port B (Discharge)</th><th>Difference</th></tr></thead>
-        <tbody id="comparison-tbody">
-          <tr><td colspan="4" style="text-align:center;color:var(--text-muted)">Run analysis to see comparison</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="risk-chart-section">
-      <div class="risk-chart-wrap">
-        <canvas id="risk-chart"></canvas>
+      <div class="treatment-grid">
+        <div class="treatment-section">
+          <h3>Organism Survival at Destination</h3>
+          <div id="organism-survival">
+            <p style="color:var(--text-muted);font-size:0.85rem">Run analysis to see organism survival probabilities.
+            </p>
+          </div>
+        </div>
+        <div class="treatment-section">
+          <h3>Recommended Treatment</h3>
+          <div id="treatment-recommendation">
+            <p style="color:var(--text-muted);font-size:0.85rem">Run analysis to get treatment recommendation.</p>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</section>
 
-<!-- ========== TAB 3: TREATMENT ========== -->
-<section id="tab-treatment" class="tab-content">
-  <div class="treatment-container">
-    <h2 style="margin-bottom:24px">Treatment Advisory</h2>
-
-    <div class="treatment-grid">
       <div class="treatment-section">
-        <h3>Organism Survival at Destination</h3>
-        <div id="organism-survival">
-          <p style="color:var(--text-muted);font-size:0.85rem">Run analysis to see organism survival probabilities.</p>
-        </div>
-      </div>
-      <div class="treatment-section">
-        <h3>Recommended Treatment</h3>
-        <div id="treatment-recommendation">
-          <p style="color:var(--text-muted);font-size:0.85rem">Run analysis to get treatment recommendation.</p>
+        <h3>Treatment Effectiveness Comparison</h3>
+        <div class="treatment-chart-wrap">
+          <canvas id="treatment-chart"></canvas>
         </div>
       </div>
     </div>
+  </section>
 
-    <div class="treatment-section">
-      <h3>Treatment Effectiveness Comparison</h3>
-      <div class="treatment-chart-wrap">
-        <canvas id="treatment-chart"></canvas>
+  <!-- ========== TAB 4: ECO CREDITS ========== -->
+  <section id="tab-credits" class="tab-content">
+    <div class="credits-container">
+      <h2 style="margin-bottom:24px">Eco Credit Tracker</h2>
+
+      <div class="credits-grid">
+        <div class="credit-card">
+          <div class="card-icon">🌊</div>
+          <div class="card-value" id="credits-voyage">0</div>
+          <div class="card-label">Credits This Voyage</div>
+        </div>
+        <div class="credit-card">
+          <div class="card-icon">⭐</div>
+          <div class="card-value" id="credits-lifetime">0</div>
+          <div class="card-label">Lifetime Credits</div>
+        </div>
+        <div class="credit-card">
+          <div class="card-icon">🌿</div>
+          <div class="card-value" id="credits-co2">0 tonnes</div>
+          <div class="card-label">CO₂ Offset Equivalent</div>
+        </div>
+        <div class="credit-card">
+          <div class="card-icon">💰</div>
+          <div class="card-value" id="credits-savings">$0</div>
+          <div class="card-label">Est. Port Fee Savings</div>
+        </div>
+        <div class="credit-card">
+          <div class="card-icon">🚢</div>
+          <div class="card-value" id="credits-voyages-count">0</div>
+          <div class="card-label">Total Voyages Analyzed</div>
+        </div>
+      </div>
+
+      <div class="leaderboard-section">
+        <h3>🏆 Fleet Leaderboard</h3>
+        <table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Vessel</th>
+              <th>Credits</th>
+              <th>Voyages</th>
+              <th>Avg Risk</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-tbody"></tbody>
+        </table>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- ========== TAB 4: ECO CREDITS ========== -->
-<section id="tab-credits" class="tab-content">
-  <div class="credits-container">
-    <h2 style="margin-bottom:24px">Eco Credit Tracker</h2>
+  <!-- ========== TAB 5: REPORTS ========== -->
+  <section id="tab-reports" class="tab-content">
+    <div class="reports-container">
+      <h2>Generate Reports</h2>
+      <p>Download compliance-ready documents for port authorities and regulatory audits.</p>
 
-    <div class="credits-grid">
-      <div class="credit-card">
-        <div class="card-icon">🌊</div>
-        <div class="card-value" id="credits-voyage">0</div>
-        <div class="card-label">Credits This Voyage</div>
+      <div class="report-cards">
+        <div class="report-item">
+          <div class="rpt-icon">📋</div>
+          <h4>Voyage Risk Report</h4>
+          <p>Complete route analysis, risk scores, and environmental comparison.</p>
+        </div>
+        <div class="report-item">
+          <div class="rpt-icon">🛡️</div>
+          <h4>Risk Certificate</h4>
+          <p>Treatment configuration and compliance verification snapshot.</p>
+        </div>
+        <div class="report-item">
+          <div class="rpt-icon">🌱</div>
+          <h4>Eco Credit Statement</h4>
+          <p>Environmental performance, credits earned, and CO₂ offset log.</p>
+        </div>
       </div>
-      <div class="credit-card">
-        <div class="card-icon">⭐</div>
-        <div class="card-value" id="credits-lifetime">0</div>
-        <div class="card-label">Lifetime Credits</div>
-      </div>
-      <div class="credit-card">
-        <div class="card-icon">🌿</div>
-        <div class="card-value" id="credits-co2">0 tonnes</div>
-        <div class="card-label">CO₂ Offset Equivalent</div>
-      </div>
-      <div class="credit-card">
-        <div class="card-icon">💰</div>
-        <div class="card-value" id="credits-savings">$0</div>
-        <div class="card-label">Est. Port Fee Savings</div>
-      </div>
-      <div class="credit-card">
-        <div class="card-icon">🚢</div>
-        <div class="card-value" id="credits-voyages-count">0</div>
-        <div class="card-label">Total Voyages Analyzed</div>
-      </div>
+
+      <button class="btn-download" id="btn-download-report">
+        <i class="fa-solid fa-download"></i> Download Full Report (PDF)
+      </button>
     </div>
+  </section>
 
-    <div class="leaderboard-section">
-      <h3>🏆 Fleet Leaderboard</h3>
-      <table class="leaderboard-table">
-        <thead><tr><th>Rank</th><th>Vessel</th><th>Credits</th><th>Voyages</th><th>Avg Risk</th></tr></thead>
-        <tbody id="leaderboard-tbody"></tbody>
-      </table>
-    </div>
-  </div>
-</section>
-
-<!-- ========== TAB 5: REPORTS ========== -->
-<section id="tab-reports" class="tab-content">
-  <div class="reports-container">
-    <h2>Generate Reports</h2>
-    <p>Download compliance-ready documents for port authorities and regulatory audits.</p>
-
-    <div class="report-cards">
-      <div class="report-item">
-        <div class="rpt-icon">📋</div>
-        <h4>Voyage Risk Report</h4>
-        <p>Complete route analysis, risk scores, and environmental comparison.</p>
-      </div>
-      <div class="report-item">
-        <div class="rpt-icon">🛡️</div>
-        <h4>Risk Certificate</h4>
-        <p>Treatment configuration and compliance verification snapshot.</p>
-      </div>
-      <div class="report-item">
-        <div class="rpt-icon">🌱</div>
-        <h4>Eco Credit Statement</h4>
-        <p>Environmental performance, credits earned, and CO₂ offset log.</p>
-      </div>
-    </div>
-
-    <button class="btn-download" id="btn-download-report">
-      <i class="fa-solid fa-download"></i> Download Full Report (PDF)
-    </button>
-  </div>
-</section>
-
-<!-- ========== SCRIPTS ========== -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="js/data.js"></script>
-<script src="js/scoring.js"></script>
-<script src="js/map.js"></script>
-<script src="js/treatment.js"></script>
-<script src="js/credits.js"></script>
-<script src="js/report.js"></script>
-<script src="js/app.js"></script>
+  <!-- ========== SCRIPTS ========== -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/scoring.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/treatment.js"></script>
+  <script src="js/credits.js"></script>
+  <script src="js/liveapi.js"></script>
+  <script src="js/report.js"></script>
+  <script src="js/app.js"></script>
 </body>
+
 </html>
