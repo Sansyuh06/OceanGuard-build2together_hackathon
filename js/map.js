@@ -1,6 +1,9 @@
 // ============================================================
 // OceanGuard – Leaflet Map & Sea Route Renderer
 // ============================================================
+// Realistic maritime routing: all routes follow actual sea lanes,
+// avoiding land masses via mandatory choke points and waypoints.
+// ============================================================
 
 const OceanMap = (() => {
     let map = null;
@@ -39,7 +42,7 @@ const OceanMap = (() => {
     });
 
     // ----- Great Circle Arc -----
-    function greatCirclePoints(lat1, lng1, lat2, lng2, n = 80) {
+    function greatCirclePoints(lat1, lng1, lat2, lng2, n = 60) {
         const toR = d => d * Math.PI / 180;
         const toD = r => r * 180 / Math.PI;
         const p1 = toR(lat1), l1 = toR(lng1);
@@ -61,44 +64,551 @@ const OceanMap = (() => {
         return pts;
     }
 
-    // ----- Determine route waypoints for realistic sea lanes -----
-    function getWaypoints(portA, portB) {
-        const cA = portA.continent, cB = portB.continent;
-        const wp = ROUTE_WAYPOINTS;
+    // ============================================================
+    // MARITIME WAYPOINTS — Key choke points and sea-lane nodes
+    // ============================================================
+    const W = {
+        // Strait of Gibraltar
+        gibraltar: [36.00, -5.50],
+        // Mediterranean
+        medCentral: [35.50, 16.00],
+        crete: [35.20, 24.50],
+        // Suez Canal
+        suezNorth: [31.27, 32.34],
+        suezSouth: [29.95, 32.57],
+        // Red Sea
+        redSeaCentral: [20.50, 38.50],
+        babElMandeb: [12.60, 43.40],
+        // Gulf of Aden / Arabian Sea
+        aden: [12.80, 45.00],
+        arabianSea: [15.00, 58.00],
+        // Strait of Hormuz / Persian Gulf
+        hormuz: [26.56, 56.25],
+        hormuzApproach: [24.50, 58.50],
+        // Indian Ocean
+        indianOceanW: [8.00, 60.00],
+        indianOceanC: [5.00, 72.00],
+        sriLankaSouth: [5.80, 80.20],
+        // Bay of Bengal
+        bayBengalW: [10.00, 80.50],
+        bayBengalE: [8.00, 88.00],
+        // Strait of Malacca
+        malaccaNorth: [4.50, 98.50],
+        malaccaSouth: [1.25, 103.60],
+        // South China Sea
+        southChinaSeaSW: [2.00, 106.00],
+        southChinaSeaC: [8.00, 112.00],
+        southChinaSeaNE: [18.00, 116.00],
+        // East China Sea
+        taiwanStrait: [24.00, 119.50],
+        eastChinaSea: [28.00, 123.00],
+        // Korea Strait / Sea of Japan
+        koreaStrait: [34.00, 129.00],
+        // Pacific — Japan approach
+        japanPacific: [33.00, 137.00],
+        // Cape of Good Hope
+        goodHopeW: [-34.50, 17.50],
+        goodHopeE: [-34.36, 20.00],
+        // Mozambique Channel / East Africa
+        mozambique: [-24.00, 36.00],
+        eastAfrica: [-5.00, 42.00],
+        // South Atlantic / Brazil
+        southAtlanticW: [-25.00, -40.00],
+        // North Atlantic
+        northAtlanticE: [40.00, -10.00],
+        // Gulf of Mexico approach
+        floridaStrait: [25.00, -80.50],
+        gulfMexico: [27.50, -90.00],
+        // Pacific — US West Coast
+        pacificNE: [32.00, -120.00],
+        pacificHawaii: [22.00, -155.00],
+        pacificCentral: [15.00, 170.00],
+        // Australia approach
+        torresStrait: [-10.50, 142.00],
+        sydneyApproach: [-33.50, 152.50],
+        // Panama Canal approach
+        panamaCarib: [9.40, -79.90],
+        panamaPacific: [8.90, -79.50],
+    };
 
-        // Europe ↔ Asia (via Suez/Aden/Strait of Malacca)
-        if ((cA === 'europe' && (cB === 'asia' || cB === 'oceania')) ||
-            ((cA === 'asia' || cA === 'oceania') && cB === 'europe')) {
-            const waypoints = [wp.gibraltar, wp.suezNorth, wp.suezSouth, wp.aden];
-            if (cB === 'asia' || cA === 'asia') {
-                const asiaPort = cA === 'asia' ? portA : portB;
-                if (asiaPort.lng > 90) waypoints.push(wp.malacca);
-            }
-            return cA === 'europe' ? waypoints : [...waypoints].reverse();
+    // ============================================================
+    // PORT REGION CLASSIFICATION
+    // Assigns each port to a maritime sub-region for routing
+    // ============================================================
+    function getPortRegion(port) {
+        const id = port.id;
+        // Indian subcontinent - west coast
+        if (id === 'mumbai') return 'india_west';
+        // Indian subcontinent - east coast
+        if (id === 'chennai') return 'india_east';
+        // Persian Gulf / Middle East
+        if (id === 'dubai') return 'persian_gulf';
+        // Southeast Asia / Malacca
+        if (id === 'singapore') return 'malacca';
+        // East China Sea
+        if (id === 'shanghai') return 'east_china_sea';
+        // Korea
+        if (id === 'busan') return 'korea';
+        // Japan
+        if (id === 'yokohama') return 'japan';
+        // North Europe
+        if (id === 'rotterdam' || id === 'hamburg') return 'north_europe';
+        // US Gulf
+        if (id === 'houston') return 'us_gulf';
+        // US Pacific
+        if (id === 'losangeles') return 'us_pacific';
+        // South America Atlantic
+        if (id === 'santos') return 'south_america_atlantic';
+        // South Africa — Atlantic side
+        if (id === 'capetown') return 'south_africa_west';
+        // South Africa — Indian Ocean side
+        if (id === 'durban') return 'south_africa_east';
+        // Australia
+        if (id === 'sydney') return 'australia';
+        return 'unknown';
+    }
+
+    // ============================================================
+    // ROUTE GRAPH — Defines waypoint sequences between regions
+    // Each key pair defines the ordered sea-lane waypoints
+    // ============================================================
+    function getSeaLaneWaypoints(regionA, regionB, portA, portB) {
+        // Normalize to ordered pair so we only need to define each route once
+        const key = [regionA, regionB].sort().join('|');
+        const reversed = regionA > regionB;
+
+        const routes = {
+            // ==== INDIA ↔ EAST ASIA (the user's exact bug) ====
+            'east_china_sea|india_east': [
+                W.bayBengalW, W.bayBengalE, W.malaccaNorth, W.malaccaSouth,
+                W.southChinaSeaSW, W.southChinaSeaC, W.southChinaSeaNE,
+                W.taiwanStrait, W.eastChinaSea
+            ],
+            'india_east|korea': [
+                W.bayBengalW, W.bayBengalE, W.malaccaNorth, W.malaccaSouth,
+                W.southChinaSeaSW, W.southChinaSeaC, W.southChinaSeaNE,
+                W.taiwanStrait, W.eastChinaSea, W.koreaStrait
+            ],
+            'india_east|japan': [
+                W.bayBengalW, W.bayBengalE, W.malaccaNorth, W.malaccaSouth,
+                W.southChinaSeaSW, W.southChinaSeaC, W.southChinaSeaNE,
+                W.taiwanStrait, W.eastChinaSea
+            ],
+            'india_east|malacca': [
+                W.bayBengalW, W.bayBengalE, W.malaccaNorth
+            ],
+            'india_west|east_china_sea': [
+                W.sriLankaSouth, W.bayBengalE, W.malaccaNorth, W.malaccaSouth,
+                W.southChinaSeaSW, W.southChinaSeaC, W.southChinaSeaNE,
+                W.taiwanStrait, W.eastChinaSea
+            ],
+            'india_west|korea': [
+                W.sriLankaSouth, W.bayBengalE, W.malaccaNorth, W.malaccaSouth,
+                W.southChinaSeaSW, W.southChinaSeaC, W.southChinaSeaNE,
+                W.taiwanStrait, W.eastChinaSea, W.koreaStrait
+            ],
+            'india_west|japan': [
+                W.sriLankaSouth, W.bayBengalE, W.malaccaNorth, W.malaccaSouth,
+                W.southChinaSeaSW, W.southChinaSeaC, W.southChinaSeaNE,
+                W.taiwanStrait, W.eastChinaSea
+            ],
+            'india_west|malacca': [
+                W.sriLankaSouth, W.bayBengalE, W.malaccaNorth
+            ],
+            'india_east|india_west': [
+                W.sriLankaSouth
+            ],
+
+            // ==== MALACCA (Singapore) ↔ EAST ASIA ====
+            'east_china_sea|malacca': [
+                W.southChinaSeaSW, W.southChinaSeaC, W.southChinaSeaNE,
+                W.taiwanStrait, W.eastChinaSea
+            ],
+            'korea|malacca': [
+                W.southChinaSeaSW, W.southChinaSeaC, W.southChinaSeaNE,
+                W.taiwanStrait, W.eastChinaSea, W.koreaStrait
+            ],
+            'japan|malacca': [
+                W.southChinaSeaSW, W.southChinaSeaC, W.southChinaSeaNE,
+                W.taiwanStrait, W.eastChinaSea
+            ],
+
+            // ==== EAST ASIA internal ====
+            'east_china_sea|korea': [W.eastChinaSea, W.koreaStrait],
+            'east_china_sea|japan': [W.eastChinaSea],
+            'japan|korea': [W.koreaStrait],
+
+            // ==== PERSIAN GULF ↔ ASIA ====
+            'india_east|persian_gulf': [
+                W.sriLankaSouth, W.indianOceanC, W.indianOceanW,
+                W.arabianSea, W.hormuzApproach, W.hormuz
+            ],
+            'india_west|persian_gulf': [
+                W.arabianSea, W.hormuzApproach, W.hormuz
+            ],
+            'malacca|persian_gulf': [
+                W.malaccaNorth, W.bayBengalE, W.sriLankaSouth,
+                W.indianOceanC, W.indianOceanW, W.arabianSea,
+                W.hormuzApproach, W.hormuz
+            ],
+            'east_china_sea|persian_gulf': [
+                W.southChinaSeaNE, W.southChinaSeaC, W.southChinaSeaSW,
+                W.malaccaSouth, W.malaccaNorth, W.bayBengalE, W.sriLankaSouth,
+                W.indianOceanC, W.indianOceanW, W.arabianSea,
+                W.hormuzApproach, W.hormuz
+            ],
+            'japan|persian_gulf': [
+                W.eastChinaSea, W.taiwanStrait,
+                W.southChinaSeaNE, W.southChinaSeaC, W.southChinaSeaSW,
+                W.malaccaSouth, W.malaccaNorth, W.bayBengalE, W.sriLankaSouth,
+                W.indianOceanC, W.indianOceanW, W.arabianSea,
+                W.hormuzApproach, W.hormuz
+            ],
+            'korea|persian_gulf': [
+                W.koreaStrait, W.eastChinaSea, W.taiwanStrait,
+                W.southChinaSeaNE, W.southChinaSeaC, W.southChinaSeaSW,
+                W.malaccaSouth, W.malaccaNorth, W.bayBengalE, W.sriLankaSouth,
+                W.indianOceanC, W.indianOceanW, W.arabianSea,
+                W.hormuzApproach, W.hormuz
+            ],
+
+            // ==== EUROPE ↔ ASIA (via Suez) ====
+            'india_east|north_europe': [
+                W.bayBengalW, W.sriLankaSouth, W.indianOceanC, W.indianOceanW,
+                W.arabianSea, W.aden, W.babElMandeb, W.redSeaCentral,
+                W.suezSouth, W.suezNorth, W.crete, W.medCentral, W.gibraltar,
+                W.northAtlanticE
+            ],
+            'india_west|north_europe': [
+                W.arabianSea, W.aden, W.babElMandeb, W.redSeaCentral,
+                W.suezSouth, W.suezNorth, W.crete, W.medCentral, W.gibraltar,
+                W.northAtlanticE
+            ],
+            'malacca|north_europe': [
+                W.malaccaNorth, W.bayBengalE, W.sriLankaSouth,
+                W.indianOceanC, W.indianOceanW, W.arabianSea,
+                W.aden, W.babElMandeb, W.redSeaCentral,
+                W.suezSouth, W.suezNorth, W.crete, W.medCentral, W.gibraltar,
+                W.northAtlanticE
+            ],
+            'east_china_sea|north_europe': [
+                W.eastChinaSea, W.taiwanStrait,
+                W.southChinaSeaNE, W.southChinaSeaC, W.southChinaSeaSW,
+                W.malaccaSouth, W.malaccaNorth, W.bayBengalE, W.sriLankaSouth,
+                W.indianOceanC, W.indianOceanW, W.arabianSea,
+                W.aden, W.babElMandeb, W.redSeaCentral,
+                W.suezSouth, W.suezNorth, W.crete, W.medCentral, W.gibraltar,
+                W.northAtlanticE
+            ],
+            'japan|north_europe': [
+                W.eastChinaSea, W.taiwanStrait,
+                W.southChinaSeaNE, W.southChinaSeaC, W.southChinaSeaSW,
+                W.malaccaSouth, W.malaccaNorth, W.bayBengalE, W.sriLankaSouth,
+                W.indianOceanC, W.indianOceanW, W.arabianSea,
+                W.aden, W.babElMandeb, W.redSeaCentral,
+                W.suezSouth, W.suezNorth, W.crete, W.medCentral, W.gibraltar,
+                W.northAtlanticE
+            ],
+            'korea|north_europe': [
+                W.koreaStrait, W.eastChinaSea, W.taiwanStrait,
+                W.southChinaSeaNE, W.southChinaSeaC, W.southChinaSeaSW,
+                W.malaccaSouth, W.malaccaNorth, W.bayBengalE, W.sriLankaSouth,
+                W.indianOceanC, W.indianOceanW, W.arabianSea,
+                W.aden, W.babElMandeb, W.redSeaCentral,
+                W.suezSouth, W.suezNorth, W.crete, W.medCentral, W.gibraltar,
+                W.northAtlanticE
+            ],
+            'north_europe|persian_gulf': [
+                W.northAtlanticE, W.gibraltar, W.medCentral, W.crete,
+                W.suezNorth, W.suezSouth, W.redSeaCentral, W.babElMandeb,
+                W.aden, W.arabianSea, W.hormuzApproach, W.hormuz
+            ],
+
+            // ==== EUROPE ↔ AFRICA ====
+            'north_europe|south_africa_west': [
+                W.northAtlanticE, W.gibraltar, W.goodHopeW
+            ],
+            'north_europe|south_africa_east': [
+                W.northAtlanticE, W.gibraltar, W.goodHopeW, W.goodHopeE,
+                W.mozambique
+            ],
+
+            // ==== ASIA ↔ AFRICA ====
+            'india_west|south_africa_east': [
+                W.indianOceanC, W.indianOceanW, W.eastAfrica, W.mozambique
+            ],
+            'india_east|south_africa_east': [
+                W.sriLankaSouth, W.indianOceanC, W.indianOceanW,
+                W.eastAfrica, W.mozambique
+            ],
+            'india_west|south_africa_west': [
+                W.indianOceanC, W.indianOceanW, W.eastAfrica,
+                W.mozambique, W.goodHopeE, W.goodHopeW
+            ],
+            'india_east|south_africa_west': [
+                W.sriLankaSouth, W.indianOceanC, W.indianOceanW,
+                W.eastAfrica, W.mozambique, W.goodHopeE, W.goodHopeW
+            ],
+            'malacca|south_africa_east': [
+                W.malaccaNorth, W.bayBengalE, W.sriLankaSouth,
+                W.indianOceanC, W.indianOceanW, W.eastAfrica, W.mozambique
+            ],
+            'malacca|south_africa_west': [
+                W.malaccaNorth, W.bayBengalE, W.sriLankaSouth,
+                W.indianOceanC, W.indianOceanW, W.eastAfrica,
+                W.mozambique, W.goodHopeE, W.goodHopeW
+            ],
+            'persian_gulf|south_africa_east': [
+                W.hormuz, W.hormuzApproach, W.arabianSea,
+                W.indianOceanW, W.eastAfrica, W.mozambique
+            ],
+            'persian_gulf|south_africa_west': [
+                W.hormuz, W.hormuzApproach, W.arabianSea,
+                W.indianOceanW, W.eastAfrica, W.mozambique,
+                W.goodHopeE, W.goodHopeW
+            ],
+            'south_africa_east|south_africa_west': [
+                W.goodHopeE, W.goodHopeW
+            ],
+
+            // ==== AMERICAS ↔ EUROPE ====
+            'north_europe|us_gulf': [
+                W.northAtlanticE, W.floridaStrait, W.gulfMexico
+            ],
+            'north_europe|south_america_atlantic': [
+                W.northAtlanticE
+            ],
+            'north_europe|us_pacific': [
+                W.northAtlanticE, W.gibraltar, W.medCentral, W.crete,
+                W.suezNorth, W.suezSouth, W.redSeaCentral, W.babElMandeb,
+                W.aden, W.arabianSea, W.indianOceanW, W.indianOceanC,
+                W.sriLankaSouth, W.bayBengalE, W.malaccaNorth, W.malaccaSouth,
+                W.southChinaSeaSW, W.southChinaSeaC, W.southChinaSeaNE,
+                W.taiwanStrait, W.eastChinaSea
+            ],
+
+            // ==== AMERICAS ↔ ASIA (via Pacific) ====
+            'east_china_sea|us_pacific': [
+                W.eastChinaSea, W.taiwanStrait, W.southChinaSeaNE,
+                W.pacificCentral, W.pacificHawaii, W.pacificNE
+            ],
+            'japan|us_pacific': [
+                W.japanPacific, W.pacificHawaii, W.pacificNE
+            ],
+            'korea|us_pacific': [
+                W.koreaStrait, W.japanPacific, W.pacificHawaii, W.pacificNE
+            ],
+            'malacca|us_pacific': [
+                W.southChinaSeaSW, W.southChinaSeaC, W.southChinaSeaNE,
+                W.taiwanStrait, W.eastChinaSea, W.japanPacific,
+                W.pacificHawaii, W.pacificNE
+            ],
+            'india_west|us_pacific': [
+                W.sriLankaSouth, W.bayBengalE, W.malaccaNorth, W.malaccaSouth,
+                W.southChinaSeaSW, W.southChinaSeaC, W.southChinaSeaNE,
+                W.taiwanStrait, W.eastChinaSea, W.japanPacific,
+                W.pacificHawaii, W.pacificNE
+            ],
+            'india_east|us_pacific': [
+                W.bayBengalW, W.bayBengalE, W.malaccaNorth, W.malaccaSouth,
+                W.southChinaSeaSW, W.southChinaSeaC, W.southChinaSeaNE,
+                W.taiwanStrait, W.eastChinaSea, W.japanPacific,
+                W.pacificHawaii, W.pacificNE
+            ],
+            'persian_gulf|us_pacific': [
+                W.hormuz, W.hormuzApproach, W.arabianSea, W.indianOceanW,
+                W.indianOceanC, W.sriLankaSouth, W.bayBengalE,
+                W.malaccaNorth, W.malaccaSouth, W.southChinaSeaSW,
+                W.southChinaSeaC, W.southChinaSeaNE, W.taiwanStrait,
+                W.eastChinaSea, W.japanPacific, W.pacificHawaii, W.pacificNE
+            ],
+
+            // ==== AMERICAS ↔ ASIA (via Atlantic/Suez/Indian for US Gulf) ====
+            'east_china_sea|us_gulf': [
+                W.eastChinaSea, W.taiwanStrait,
+                W.southChinaSeaNE, W.southChinaSeaC, W.southChinaSeaSW,
+                W.malaccaSouth, W.malaccaNorth, W.bayBengalE, W.sriLankaSouth,
+                W.indianOceanC, W.indianOceanW, W.arabianSea,
+                W.aden, W.babElMandeb, W.redSeaCentral,
+                W.suezSouth, W.suezNorth, W.crete, W.medCentral, W.gibraltar,
+                W.northAtlanticE, W.floridaStrait, W.gulfMexico
+            ],
+            'india_east|us_gulf': [
+                W.sriLankaSouth, W.indianOceanC, W.indianOceanW,
+                W.arabianSea, W.aden, W.babElMandeb, W.redSeaCentral,
+                W.suezSouth, W.suezNorth, W.crete, W.medCentral, W.gibraltar,
+                W.northAtlanticE, W.floridaStrait, W.gulfMexico
+            ],
+            'india_west|us_gulf': [
+                W.arabianSea, W.aden, W.babElMandeb, W.redSeaCentral,
+                W.suezSouth, W.suezNorth, W.crete, W.medCentral, W.gibraltar,
+                W.northAtlanticE, W.floridaStrait, W.gulfMexico
+            ],
+            'malacca|us_gulf': [
+                W.malaccaNorth, W.bayBengalE, W.sriLankaSouth,
+                W.indianOceanC, W.indianOceanW, W.arabianSea,
+                W.aden, W.babElMandeb, W.redSeaCentral,
+                W.suezSouth, W.suezNorth, W.crete, W.medCentral, W.gibraltar,
+                W.northAtlanticE, W.floridaStrait, W.gulfMexico
+            ],
+            'persian_gulf|us_gulf': [
+                W.hormuz, W.hormuzApproach, W.arabianSea,
+                W.aden, W.babElMandeb, W.redSeaCentral,
+                W.suezSouth, W.suezNorth, W.crete, W.medCentral, W.gibraltar,
+                W.northAtlanticE, W.floridaStrait, W.gulfMexico
+            ],
+
+            // ==== SOUTH AMERICA ====
+            'south_america_atlantic|us_gulf': [W.floridaStrait, W.gulfMexico],
+            'south_america_atlantic|us_pacific': [
+                W.southAtlanticW, W.goodHopeW, W.goodHopeE,
+                W.mozambique, W.eastAfrica, W.indianOceanW, W.indianOceanC,
+                W.sriLankaSouth, W.bayBengalE, W.malaccaNorth, W.malaccaSouth,
+                W.southChinaSeaSW
+            ],
+            'south_america_atlantic|south_africa_west': [W.southAtlanticW],
+            'south_america_atlantic|south_africa_east': [
+                W.southAtlanticW, W.goodHopeW, W.goodHopeE, W.mozambique
+            ],
+            'east_china_sea|south_america_atlantic': [
+                W.eastChinaSea, W.taiwanStrait, W.southChinaSeaNE,
+                W.southChinaSeaC, W.southChinaSeaSW, W.malaccaSouth,
+                W.malaccaNorth, W.bayBengalE, W.sriLankaSouth,
+                W.indianOceanC, W.indianOceanW, W.eastAfrica,
+                W.mozambique, W.goodHopeE, W.goodHopeW, W.southAtlanticW
+            ],
+            'india_east|south_america_atlantic': [
+                W.sriLankaSouth, W.indianOceanC, W.indianOceanW,
+                W.eastAfrica, W.mozambique, W.goodHopeE, W.goodHopeW,
+                W.southAtlanticW
+            ],
+            'india_west|south_america_atlantic': [
+                W.indianOceanC, W.indianOceanW, W.eastAfrica,
+                W.mozambique, W.goodHopeE, W.goodHopeW, W.southAtlanticW
+            ],
+            'malacca|south_america_atlantic': [
+                W.malaccaNorth, W.bayBengalE, W.sriLankaSouth,
+                W.indianOceanC, W.indianOceanW, W.eastAfrica,
+                W.mozambique, W.goodHopeE, W.goodHopeW, W.southAtlanticW
+            ],
+
+            // ==== AUSTRALIA ====
+            'australia|malacca': [
+                W.torresStrait, W.southChinaSeaC, W.southChinaSeaSW
+            ],
+            'australia|east_china_sea': [
+                W.torresStrait, W.southChinaSeaC, W.southChinaSeaNE,
+                W.taiwanStrait, W.eastChinaSea
+            ],
+            'australia|japan': [
+                W.torresStrait, W.southChinaSeaC, W.southChinaSeaNE,
+                W.taiwanStrait, W.eastChinaSea
+            ],
+            'australia|korea': [
+                W.torresStrait, W.southChinaSeaC, W.southChinaSeaNE,
+                W.taiwanStrait, W.eastChinaSea, W.koreaStrait
+            ],
+            'australia|india_east': [
+                W.torresStrait, W.southChinaSeaC, W.southChinaSeaSW,
+                W.malaccaSouth, W.malaccaNorth, W.bayBengalE, W.bayBengalW
+            ],
+            'australia|india_west': [
+                W.torresStrait, W.southChinaSeaC, W.southChinaSeaSW,
+                W.malaccaSouth, W.malaccaNorth, W.bayBengalE,
+                W.sriLankaSouth
+            ],
+            'australia|persian_gulf': [
+                W.torresStrait, W.southChinaSeaC, W.southChinaSeaSW,
+                W.malaccaSouth, W.malaccaNorth, W.bayBengalE,
+                W.sriLankaSouth, W.indianOceanC, W.indianOceanW,
+                W.arabianSea, W.hormuzApproach, W.hormuz
+            ],
+            'australia|north_europe': [
+                W.torresStrait, W.southChinaSeaC, W.southChinaSeaSW,
+                W.malaccaSouth, W.malaccaNorth, W.bayBengalE,
+                W.sriLankaSouth, W.indianOceanC, W.indianOceanW,
+                W.arabianSea, W.aden, W.babElMandeb, W.redSeaCentral,
+                W.suezSouth, W.suezNorth, W.crete, W.medCentral,
+                W.gibraltar, W.northAtlanticE
+            ],
+            'australia|south_africa_east': [
+                W.sydneyApproach, W.goodHopeE, W.mozambique
+            ],
+            'australia|south_africa_west': [
+                W.sydneyApproach, W.goodHopeE, W.goodHopeW
+            ],
+            'australia|us_pacific': [
+                W.sydneyApproach, W.pacificCentral, W.pacificHawaii, W.pacificNE
+            ],
+
+            // ==== AFRICA ↔ AMERICAS ====
+            'south_africa_west|us_gulf': [
+                W.goodHopeW, W.southAtlanticW, W.floridaStrait, W.gulfMexico
+            ],
+            'south_africa_east|us_gulf': [
+                W.mozambique, W.goodHopeE, W.goodHopeW, W.southAtlanticW,
+                W.floridaStrait, W.gulfMexico
+            ],
+            'south_africa_west|us_pacific': [
+                W.goodHopeW, W.southAtlanticW
+            ],
+            'south_africa_east|us_pacific': [
+                W.mozambique, W.goodHopeE, W.goodHopeW, W.southAtlanticW
+            ],
+
+            // ==== US Gulf ↔ US Pacific ====
+            'us_gulf|us_pacific': [
+                W.gulfMexico, W.floridaStrait, W.panamaCarib,
+                W.panamaPacific, W.pacificNE
+            ],
+
+            // ==== East Asia ↔ Africa (via Indian Ocean) ====
+            'east_china_sea|south_africa_east': [
+                W.eastChinaSea, W.taiwanStrait, W.southChinaSeaNE,
+                W.southChinaSeaC, W.southChinaSeaSW, W.malaccaSouth,
+                W.malaccaNorth, W.bayBengalE, W.sriLankaSouth,
+                W.indianOceanC, W.indianOceanW, W.eastAfrica, W.mozambique
+            ],
+            'east_china_sea|south_africa_west': [
+                W.eastChinaSea, W.taiwanStrait, W.southChinaSeaNE,
+                W.southChinaSeaC, W.southChinaSeaSW, W.malaccaSouth,
+                W.malaccaNorth, W.bayBengalE, W.sriLankaSouth,
+                W.indianOceanC, W.indianOceanW, W.eastAfrica,
+                W.mozambique, W.goodHopeE, W.goodHopeW
+            ],
+            'japan|south_africa_east': [
+                W.eastChinaSea, W.taiwanStrait, W.southChinaSeaNE,
+                W.southChinaSeaC, W.southChinaSeaSW, W.malaccaSouth,
+                W.malaccaNorth, W.bayBengalE, W.sriLankaSouth,
+                W.indianOceanC, W.indianOceanW, W.eastAfrica, W.mozambique
+            ],
+            'korea|south_africa_east': [
+                W.koreaStrait, W.eastChinaSea, W.taiwanStrait,
+                W.southChinaSeaNE, W.southChinaSeaC, W.southChinaSeaSW,
+                W.malaccaSouth, W.malaccaNorth, W.bayBengalE, W.sriLankaSouth,
+                W.indianOceanC, W.indianOceanW, W.eastAfrica, W.mozambique
+            ],
+        };
+
+        let waypoints = routes[key] || [];
+
+        // If no defined route, return empty (the system will use great circle as fallback)
+        if (!waypoints.length) return [];
+
+        // If the pair was defined in opposite order, reverse the waypoints
+        if (reversed) {
+            waypoints = [...waypoints].reverse();
         }
 
-        // Europe ↔ Africa
-        if ((cA === 'europe' && cB === 'africa') || (cA === 'africa' && cB === 'europe')) {
-            return [wp.gibraltar];
-        }
-
-        // Americas ↔ Asia via Pacific
-        if ((cA === 'americas' && (cB === 'asia' || cB === 'oceania')) ||
-            ((cA === 'asia' || cA === 'oceania') && cB === 'americas')) {
-            return []; // direct Pacific crossing
-        }
-
-        // Asia ↔ Africa
-        if ((cA === 'asia' && cB === 'africa') || (cA === 'africa' && cB === 'asia')) {
-            return [wp.aden];
-        }
-
-        return []; // direct route
+        return waypoints;
     }
 
     // ----- Build full route path through waypoints -----
     function buildRoutePath(portA, portB) {
-        const waypoints = getWaypoints(portA, portB);
+        const regionA = getPortRegion(portA);
+        const regionB = getPortRegion(portB);
+
+        const waypoints = getSeaLaneWaypoints(regionA, regionB, portA, portB);
         const allPoints = [
             [portA.lat, portA.lng],
             ...waypoints,
@@ -109,9 +619,8 @@ const OceanMap = (() => {
         for (let i = 0; i < allPoints.length - 1; i++) {
             const seg = greatCirclePoints(
                 allPoints[i][0], allPoints[i][1],
-                allPoints[i + 1][0], allPoints[i + 1][1], 40
+                allPoints[i + 1][0], allPoints[i + 1][1], 30
             );
-            // avoid duplicate junction point
             if (i > 0) seg.shift();
             fullPath = fullPath.concat(seg);
         }
@@ -188,7 +697,7 @@ const OceanMap = (() => {
         const path = buildRoutePath(portA, portB);
         const color = routeColor(riskScore);
 
-        // Glow layer (below)
+        // Glow layer
         L.polyline(path, {
             color: color,
             weight: 6,
@@ -205,12 +714,11 @@ const OceanMap = (() => {
             smoothFactor: 1
         }).addTo(map);
 
-        // Animate ship along route
+        // Animate ship
         animateShip(path);
 
-        // Fit map bounds
-        const group = L.featureGroup([portMarkers[portA.id], portMarkers[portB.id]]);
-        map.fitBounds(group.getBounds().pad(0.3));
+        // Fit bounds to see full route
+        map.fitBounds(L.latLngBounds(path).pad(0.15));
     }
 
     function animateShip(path) {
@@ -232,14 +740,12 @@ const OceanMap = (() => {
         if (shipMarker) { map.removeLayer(shipMarker); shipMarker = null; }
         if (animFrame) { clearTimeout(animFrame); animFrame = null; }
 
-        // Remove glow layers
         map.eachLayer(layer => {
             if (layer instanceof L.Polyline && !(layer instanceof L.TileLayer)) {
                 map.removeLayer(layer);
             }
         });
 
-        // Reset port markers to default
         PORTS.forEach(port => {
             if (portMarkers[port.id]) map.removeLayer(portMarkers[port.id]);
             portMarkers[port.id] = L.marker([port.lat, port.lng], { icon: PORT_ICON_DEFAULT(port) })
