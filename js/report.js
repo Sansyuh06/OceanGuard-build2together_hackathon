@@ -121,7 +121,27 @@ const ReportGenerator = (() => {
             doc.text(`Lifetime Credits: ${c.lifetimeCredits}`, M, y); y += 6;
             doc.text(`CO₂ Offset Equivalent: ${c.co2Offset} tonnes`, M, y); y += 6;
             doc.text(`Estimated Port Fee Savings: $${c.feeDiscount.toLocaleString()}`, M, y);
+            y += 10;
         }
+
+        // -- Data Sources --
+        doc.setDrawColor(200, 200, 200);
+        doc.line(M, y, W - M, y); y += 8;
+        doc.setTextColor(0, 212, 255);
+        doc.setFontSize(11); doc.setFont('helvetica', 'bold');
+        doc.text('Data Sources & Calibration', M, y); y += 6;
+
+        doc.setFontSize(8); doc.setTextColor(80, 80, 80); doc.setFont('helvetica', 'normal');
+        const sources = [
+            '• SST & Salinity: NOAA World Ocean Atlas 2023 (Locarnini et al. 2024)',
+            '• Invasive Species: IUCN Global Invasive Species Database & Smithsonian NEMESIS',
+            '• Treatment Efficiency: IMO MEPC.300(72) G8 Guidelines & EPA ETV Protocol 4.6',
+            '• Coral Reefs: Allen Coral Atlas & NOAA Coral Reef Watch',
+            '• Live Conditions: Open-Meteo Marine API (Real-time SST, Waves, Currents)'
+        ];
+        sources.forEach(s => {
+            doc.text(s, M, y); y += 4;
+        });
 
         // -- Footer --
         const pageH = doc.internal.pageSize.getHeight();

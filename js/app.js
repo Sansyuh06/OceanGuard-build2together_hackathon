@@ -16,7 +16,10 @@ const App = (() => {
         setupOrganismChecklist();
         setupReportButtons();
         updateCreditsTab();
+        setupReportButtons();
+        updateCreditsTab();
         updateLeaderboard();
+        populateDataSources();
 
         // Default selections for demo
         document.getElementById('port-a').value = 'singapore';
@@ -386,14 +389,36 @@ const App = (() => {
         });
     }
 
+    // ---- Data Sources ----
+    function populateDataSources() {
+        const list = document.getElementById('data-sources-list');
+        if (!list || !window.DATA_METADATA) return;
+
+        list.innerHTML = '';
+        Object.entries(DATA_METADATA).forEach(([key, meta]) => {
+            list.innerHTML += `
+        <li style="margin-bottom: 8px;">
+          <strong style="color:var(--accent);">${meta.name}</strong><br>
+          <span style="color:var(--text-dim);">${meta.citation}</span>
+          ${meta.url ? `<br><a href="${meta.url}" target="_blank" style="color:var(--text-muted); text-decoration:underline;">Source Link</a>` : ''}
+        </li>`;
+        });
+        // Add Live API source
+        list.innerHTML += `
+      <li style="margin-bottom: 8px;">
+        <strong style="color:var(--green);">Real-time Marine Conditions</strong><br>
+        <span style="color:var(--text-dim);">Open-Meteo Marine API (SST, Wave Height, Ocean Currents)</span>
+        <br><a href="https://open-meteo.com/en/docs/marine-weather-api" target="_blank" style="color:var(--text-muted); text-decoration:underline;">API Documentation</a>
+      </li>`;
+    }
+
     // ---- Helpers ----
     function setText(id, val) {
         const el = document.getElementById(id);
         if (el) el.textContent = val;
     }
 
-    // ---- Boot ----
-    document.addEventListener('DOMContentLoaded', init);
-
-    return { runAnalysis };
+    return { init, runAnalysis, updateRiskTab, updateTreatmentTab, updateCreditsTab, updateLeaderboard };
 })();
+
+document.addEventListener('DOMContentLoaded', App.init);
