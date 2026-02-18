@@ -114,8 +114,18 @@ const OceanMap = (() => {
         eastAfrica: [-5.00, 42.00],
         // South Atlantic / Brazil
         southAtlanticW: [-25.00, -40.00],
+        brazilNE: [-5.00, -34.50],
+        brazilE: [-13.00, -37.00],
+        brazilSE: [-22.00, -40.00],
         // North Atlantic
         northAtlanticE: [40.00, -10.00],
+        bermuda: [32.00, -64.00],
+        // US East Coast
+        usEastCoast: [32.00, -78.00],
+        // Caribbean
+        caribbeanE: [15.00, -62.00],
+        caribbeanW: [19.00, -76.00],
+        caribbeanS: [12.00, -68.00],
         // Gulf of Mexico approach
         floridaStrait: [25.00, -80.50],
         gulfMexico: [27.50, -90.00],
@@ -123,6 +133,8 @@ const OceanMap = (() => {
         pacificNE: [32.00, -120.00],
         pacificHawaii: [22.00, -155.00],
         pacificCentral: [15.00, 170.00],
+        // Central America Pacific
+        centralAmericaPac: [10.00, -90.00],
         // Australia approach
         torresStrait: [-10.50, 142.00],
         sydneyApproach: [-33.50, 152.50],
@@ -373,18 +385,17 @@ const OceanMap = (() => {
 
             // ==== AMERICAS ↔ EUROPE ====
             'north_europe|us_gulf': [
-                W.northAtlanticE, W.floridaStrait, W.gulfMexico
+                W.northAtlanticE, W.bermuda, W.usEastCoast,
+                W.floridaStrait, W.gulfMexico
             ],
             'north_europe|south_america_atlantic': [
-                W.northAtlanticE
+                W.northAtlanticE, W.bermuda, W.caribbeanE,
+                W.brazilNE, W.brazilE, W.brazilSE
             ],
             'north_europe|us_pacific': [
-                W.northAtlanticE, W.gibraltar, W.medCentral, W.crete,
-                W.suezNorth, W.suezSouth, W.redSeaCentral, W.babElMandeb,
-                W.aden, W.arabianSea, W.indianOceanW, W.indianOceanC,
-                W.sriLankaSouth, W.bayBengalE, W.malaccaNorth, W.malaccaSouth,
-                W.southChinaSeaSW, W.southChinaSeaC, W.southChinaSeaNE,
-                W.taiwanStrait, W.eastChinaSea
+                W.northAtlanticE, W.bermuda, W.usEastCoast,
+                W.floridaStrait, W.panamaCarib, W.panamaPacific,
+                W.pacificNE
             ],
 
             // ==== AMERICAS ↔ ASIA (via Pacific) ====
@@ -458,38 +469,48 @@ const OceanMap = (() => {
                 W.northAtlanticE, W.floridaStrait, W.gulfMexico
             ],
 
-            // ==== SOUTH AMERICA ====
-            'south_america_atlantic|us_gulf': [W.floridaStrait, W.gulfMexico],
-            'south_america_atlantic|us_pacific': [
-                W.southAtlanticW, W.goodHopeW, W.goodHopeE,
-                W.mozambique, W.eastAfrica, W.indianOceanW, W.indianOceanC,
-                W.sriLankaSouth, W.bayBengalE, W.malaccaNorth, W.malaccaSouth,
-                W.southChinaSeaSW
+            // ==== SOUTH AMERICA ↔ US ====
+            'south_america_atlantic|us_gulf': [
+                W.brazilSE, W.brazilE, W.brazilNE,
+                W.caribbeanS, W.caribbeanW, W.floridaStrait, W.gulfMexico
             ],
-            'south_america_atlantic|south_africa_west': [W.southAtlanticW],
+            'south_america_atlantic|us_pacific': [
+                W.brazilSE, W.brazilE, W.brazilNE,
+                W.caribbeanS, W.caribbeanW,
+                W.panamaCarib, W.panamaPacific,
+                W.centralAmericaPac, W.pacificNE
+            ],
+            'south_america_atlantic|south_africa_west': [
+                W.brazilSE, W.brazilE, W.brazilNE, W.southAtlanticW,
+                W.goodHopeW
+            ],
             'south_america_atlantic|south_africa_east': [
-                W.southAtlanticW, W.goodHopeW, W.goodHopeE, W.mozambique
+                W.brazilSE, W.brazilE, W.brazilNE, W.southAtlanticW,
+                W.goodHopeW, W.goodHopeE, W.mozambique
             ],
             'east_china_sea|south_america_atlantic': [
                 W.eastChinaSea, W.taiwanStrait, W.southChinaSeaNE,
                 W.southChinaSeaC, W.southChinaSeaSW, W.malaccaSouth,
                 W.malaccaNorth, W.bayBengalE, W.sriLankaSouth,
                 W.indianOceanC, W.indianOceanW, W.eastAfrica,
-                W.mozambique, W.goodHopeE, W.goodHopeW, W.southAtlanticW
+                W.mozambique, W.goodHopeE, W.goodHopeW, W.southAtlanticW,
+                W.brazilNE, W.brazilE, W.brazilSE
             ],
             'india_east|south_america_atlantic': [
                 W.sriLankaSouth, W.indianOceanC, W.indianOceanW,
                 W.eastAfrica, W.mozambique, W.goodHopeE, W.goodHopeW,
-                W.southAtlanticW
+                W.southAtlanticW, W.brazilNE, W.brazilE, W.brazilSE
             ],
             'india_west|south_america_atlantic': [
                 W.indianOceanC, W.indianOceanW, W.eastAfrica,
-                W.mozambique, W.goodHopeE, W.goodHopeW, W.southAtlanticW
+                W.mozambique, W.goodHopeE, W.goodHopeW, W.southAtlanticW,
+                W.brazilNE, W.brazilE, W.brazilSE
             ],
             'malacca|south_america_atlantic': [
                 W.malaccaNorth, W.bayBengalE, W.sriLankaSouth,
                 W.indianOceanC, W.indianOceanW, W.eastAfrica,
-                W.mozambique, W.goodHopeE, W.goodHopeW, W.southAtlanticW
+                W.mozambique, W.goodHopeE, W.goodHopeW, W.southAtlanticW,
+                W.brazilNE, W.brazilE, W.brazilSE
             ],
 
             // ==== AUSTRALIA ====
@@ -543,23 +564,32 @@ const OceanMap = (() => {
 
             // ==== AFRICA ↔ AMERICAS ====
             'south_africa_west|us_gulf': [
-                W.goodHopeW, W.southAtlanticW, W.floridaStrait, W.gulfMexico
+                W.goodHopeW, W.southAtlanticW, W.brazilNE,
+                W.caribbeanS, W.caribbeanW, W.floridaStrait, W.gulfMexico
             ],
             'south_africa_east|us_gulf': [
                 W.mozambique, W.goodHopeE, W.goodHopeW, W.southAtlanticW,
+                W.brazilNE, W.caribbeanS, W.caribbeanW,
                 W.floridaStrait, W.gulfMexico
             ],
             'south_africa_west|us_pacific': [
-                W.goodHopeW, W.southAtlanticW
+                W.goodHopeW, W.southAtlanticW, W.brazilNE,
+                W.caribbeanS, W.caribbeanW,
+                W.panamaCarib, W.panamaPacific,
+                W.centralAmericaPac, W.pacificNE
             ],
             'south_africa_east|us_pacific': [
-                W.mozambique, W.goodHopeE, W.goodHopeW, W.southAtlanticW
+                W.mozambique, W.goodHopeE, W.goodHopeW, W.southAtlanticW,
+                W.brazilNE, W.caribbeanS, W.caribbeanW,
+                W.panamaCarib, W.panamaPacific,
+                W.centralAmericaPac, W.pacificNE
             ],
 
             // ==== US Gulf ↔ US Pacific ====
             'us_gulf|us_pacific': [
-                W.gulfMexico, W.floridaStrait, W.panamaCarib,
-                W.panamaPacific, W.pacificNE
+                W.gulfMexico, W.floridaStrait, W.caribbeanW,
+                W.panamaCarib, W.panamaPacific,
+                W.centralAmericaPac, W.pacificNE
             ],
 
             // ==== East Asia ↔ Africa (via Indian Ocean) ====
