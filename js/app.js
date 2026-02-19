@@ -21,6 +21,11 @@ const App = (() => {
         updateLeaderboard();
         populateDataSources();
 
+        // Initialize Live Traffic (Simulation)
+        if (typeof TrafficEngine !== 'undefined') {
+            setTimeout(() => TrafficEngine.init(), 1000); // Slight delay for map ready
+        }
+
         // Default selections for demo
         document.getElementById('port-a').value = 'singapore';
         document.getElementById('port-b').value = 'chennai';
@@ -135,6 +140,10 @@ const App = (() => {
 
         // Update all views
         OceanMap.drawRoute(portA, portB, risk.total);
+
+        // Hide background traffic to focus on analysis
+        if (typeof TrafficEngine !== 'undefined') TrafficEngine.stop();
+
         updateRiskTab(currentAnalysis);
         updateTreatmentTab(currentAnalysis);
         updateCreditsTab();

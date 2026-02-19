@@ -864,5 +864,5 @@ const OceanMap = (() => {
         if (map) map.invalidateSize();
     }
 
-    return { init, drawRoute, clearRoute, resize };
+    return { init, drawRoute, clearRoute, resize, getRoutePath: buildRoutePath, getMap: () => map };
 })();
