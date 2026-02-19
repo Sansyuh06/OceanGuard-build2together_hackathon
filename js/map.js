@@ -149,6 +149,11 @@ const OceanMap = (() => {
 
         // Sri Lanka East
         sriLankaEast: [7.0, 82.0],
+
+        // Japan South Coast (to avoid land crossing)
+        kyushuSouth: [30.50, 130.50],
+        shikokuSouth: [31.50, 134.00],
+        tokyoApproach: [34.50, 139.50],
     };
 
     // ============================================================
@@ -255,8 +260,14 @@ const OceanMap = (() => {
 
             // ==== EAST ASIA internal ====
             'east_china_sea|korea': [W.eastChinaSea, W.koreaStrait],
-            'east_china_sea|japan': [W.eastChinaSea],
-            'japan|korea': [W.koreaStrait],
+            'east_china_sea|japan': [
+                W.eastChinaSea, W.kyushuSouth, W.shikokuSouth,
+                W.japanPacific, W.tokyoApproach
+            ],
+            'japan|korea': [
+                W.koreaStrait, W.kyushuSouth, W.shikokuSouth,
+                W.japanPacific, W.tokyoApproach
+            ],
 
             // ==== PERSIAN GULF ↔ ASIA ====
             'india_east|persian_gulf': [
@@ -586,6 +597,17 @@ const OceanMap = (() => {
                 W.sydneyApproach, W.pacificCentral, W.pacificHawaii, W.pacificNE
             ],
 
+            // ==== AUSTRALIA (Extended) ====
+            'australia|us_gulf': [
+                W.sydneyApproach, W.pacificCentral, W.pacificHawaii, W.pacificNE,
+                W.centralAmericaPac, W.panamaPacific, W.panamaCarib,
+                W.caribbeanW, W.floridaStrait, W.gulfMexico
+            ],
+            'australia|south_america_atlantic': [
+                W.sydneyApproach, W.goodHopeE, W.goodHopeW, W.southAtlanticW,
+                W.brazilSE
+            ],
+
             // ==== AFRICA ↔ AMERICAS ====
             'south_africa_west|us_gulf': [
                 W.goodHopeW, W.southAtlanticW, W.brazilNE,
@@ -641,6 +663,37 @@ const OceanMap = (() => {
                 W.southChinaSeaNE, W.southChinaSeaC, W.southChinaSeaSW,
                 W.malaccaSouth, W.malaccaNorth, W.bayBengalE, W.sriLankaSouth,
                 W.indianOceanC, W.indianOceanW, W.eastAfrica, W.mozambique
+            ],
+            'japan|south_africa_west': [
+                W.eastChinaSea, W.taiwanStrait, W.southChinaSeaNE,
+                W.southChinaSeaC, W.southChinaSeaSW, W.malaccaSouth,
+                W.malaccaNorth, W.bayBengalE, W.sriLankaSouth,
+                W.indianOceanC, W.indianOceanW, W.eastAfrica,
+                W.mozambique, W.goodHopeE, W.goodHopeW
+            ],
+            'korea|south_africa_west': [
+                W.koreaStrait, W.eastChinaSea, W.taiwanStrait,
+                W.southChinaSeaNE, W.southChinaSeaC, W.southChinaSeaSW,
+                W.malaccaSouth, W.malaccaNorth, W.bayBengalE, W.sriLankaSouth,
+                W.indianOceanC, W.indianOceanW, W.eastAfrica,
+                W.mozambique, W.goodHopeE, W.goodHopeW
+            ],
+            // Missing South America links for East Asia
+            'japan|south_america_atlantic': [
+                W.eastChinaSea, W.taiwanStrait, W.southChinaSeaNE,
+                W.southChinaSeaC, W.southChinaSeaSW, W.malaccaSouth,
+                W.malaccaNorth, W.bayBengalE, W.sriLankaSouth,
+                W.indianOceanC, W.indianOceanW, W.eastAfrica,
+                W.mozambique, W.goodHopeE, W.goodHopeW, W.southAtlanticW,
+                W.brazilNE, W.brazilE, W.brazilSE
+            ],
+            'korea|south_america_atlantic': [
+                W.koreaStrait, W.eastChinaSea, W.taiwanStrait,
+                W.southChinaSeaNE, W.southChinaSeaC, W.southChinaSeaSW,
+                W.malaccaSouth, W.malaccaNorth, W.bayBengalE, W.sriLankaSouth,
+                W.indianOceanC, W.indianOceanW, W.eastAfrica,
+                W.mozambique, W.goodHopeE, W.goodHopeW, W.southAtlanticW,
+                W.brazilNE, W.brazilE, W.brazilSE
             ],
         };
 
