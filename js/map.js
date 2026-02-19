@@ -141,6 +141,14 @@ const OceanMap = (() => {
         // Panama Canal approach
         panamaCarib: [9.40, -79.90],
         panamaPacific: [8.90, -79.50],
+
+        // English Channel / North Sea approach
+        englishChannelDover: [51.0, 1.5],
+        englishChannelLandsEnd: [49.5, -6.0],
+        finisterre: [43.0, -10.0],
+
+        // Sri Lanka East
+        sriLankaEast: [7.0, 82.0],
     };
 
     // ============================================================
@@ -225,10 +233,10 @@ const OceanMap = (() => {
                 W.taiwanStrait, W.eastChinaSea
             ],
             'india_west|malacca': [
-                W.sriLankaSouth, W.bayBengalE, W.malaccaNorth
+                W.sriLankaSouth, W.sriLankaEast, W.bayBengalE, W.malaccaNorth
             ],
             'india_east|india_west': [
-                W.sriLankaSouth
+                W.sriLankaSouth, W.sriLankaEast
             ],
 
             // ==== MALACCA (Singapore) ↔ EAST ASIA ====
@@ -289,11 +297,13 @@ const OceanMap = (() => {
                 W.bayBengalW, W.sriLankaSouth, W.indianOceanC, W.indianOceanW,
                 W.arabianSea, W.aden, W.babElMandeb, W.redSeaCentral,
                 W.suezSouth, W.suezNorth, W.crete, W.medCentral, W.gibraltar,
-                W.northAtlanticE
+                W.finisterre, W.englishChannelLandsEnd, W.englishChannelDover,
+                W.northAtlanticE // treated as North Sea approach
             ],
             'india_west|north_europe': [
                 W.arabianSea, W.aden, W.babElMandeb, W.redSeaCentral,
                 W.suezSouth, W.suezNorth, W.crete, W.medCentral, W.gibraltar,
+                W.finisterre, W.englishChannelLandsEnd, W.englishChannelDover,
                 W.northAtlanticE
             ],
             'malacca|north_europe': [
@@ -301,6 +311,7 @@ const OceanMap = (() => {
                 W.indianOceanC, W.indianOceanW, W.arabianSea,
                 W.aden, W.babElMandeb, W.redSeaCentral,
                 W.suezSouth, W.suezNorth, W.crete, W.medCentral, W.gibraltar,
+                W.finisterre, W.englishChannelLandsEnd, W.englishChannelDover,
                 W.northAtlanticE
             ],
             'east_china_sea|north_europe': [
@@ -310,6 +321,7 @@ const OceanMap = (() => {
                 W.indianOceanC, W.indianOceanW, W.arabianSea,
                 W.aden, W.babElMandeb, W.redSeaCentral,
                 W.suezSouth, W.suezNorth, W.crete, W.medCentral, W.gibraltar,
+                W.finisterre, W.englishChannelLandsEnd, W.englishChannelDover,
                 W.northAtlanticE
             ],
             'japan|north_europe': [
@@ -319,6 +331,7 @@ const OceanMap = (() => {
                 W.indianOceanC, W.indianOceanW, W.arabianSea,
                 W.aden, W.babElMandeb, W.redSeaCentral,
                 W.suezSouth, W.suezNorth, W.crete, W.medCentral, W.gibraltar,
+                W.finisterre, W.englishChannelLandsEnd, W.englishChannelDover,
                 W.northAtlanticE
             ],
             'korea|north_europe': [
@@ -328,20 +341,24 @@ const OceanMap = (() => {
                 W.indianOceanC, W.indianOceanW, W.arabianSea,
                 W.aden, W.babElMandeb, W.redSeaCentral,
                 W.suezSouth, W.suezNorth, W.crete, W.medCentral, W.gibraltar,
+                W.finisterre, W.englishChannelLandsEnd, W.englishChannelDover,
                 W.northAtlanticE
             ],
             'north_europe|persian_gulf': [
-                W.northAtlanticE, W.gibraltar, W.medCentral, W.crete,
+                W.northAtlanticE, W.englishChannelDover, W.englishChannelLandsEnd,
+                W.finisterre, W.gibraltar, W.medCentral, W.crete,
                 W.suezNorth, W.suezSouth, W.redSeaCentral, W.babElMandeb,
                 W.aden, W.arabianSea, W.hormuzApproach, W.hormuz
             ],
 
             // ==== EUROPE ↔ AFRICA ====
             'north_europe|south_africa_west': [
-                W.northAtlanticE, W.gibraltar, W.goodHopeW
+                W.northAtlanticE, W.englishChannelDover, W.englishChannelLandsEnd,
+                W.finisterre, W.gibraltar, W.goodHopeW
             ],
             'north_europe|south_africa_east': [
-                W.northAtlanticE, W.gibraltar, W.goodHopeW, W.goodHopeE,
+                W.northAtlanticE, W.englishChannelDover, W.englishChannelLandsEnd,
+                W.finisterre, W.gibraltar, W.goodHopeW, W.goodHopeE,
                 W.mozambique
             ],
 
@@ -385,15 +402,21 @@ const OceanMap = (() => {
 
             // ==== AMERICAS ↔ EUROPE ====
             'north_europe|us_gulf': [
-                W.northAtlanticE, W.bermuda, W.usEastCoast,
+                W.northAtlanticE, W.englishChannelDover, W.englishChannelLandsEnd,
+                W.finisterre,
+                W.bermuda, W.usEastCoast,
                 W.floridaStrait, W.gulfMexico
             ],
             'north_europe|south_america_atlantic': [
-                W.northAtlanticE, W.bermuda, W.caribbeanE,
+                W.northAtlanticE, W.englishChannelDover, W.englishChannelLandsEnd,
+                W.finisterre,
+                W.bermuda, W.caribbeanE,
                 W.brazilNE, W.brazilE, W.brazilSE
             ],
             'north_europe|us_pacific': [
-                W.northAtlanticE, W.bermuda, W.usEastCoast,
+                W.northAtlanticE, W.englishChannelDover, W.englishChannelLandsEnd,
+                W.finisterre,
+                W.bermuda, W.usEastCoast,
                 W.floridaStrait, W.panamaCarib, W.panamaPacific,
                 W.pacificNE
             ],
@@ -550,7 +573,8 @@ const OceanMap = (() => {
                 W.sriLankaSouth, W.indianOceanC, W.indianOceanW,
                 W.arabianSea, W.aden, W.babElMandeb, W.redSeaCentral,
                 W.suezSouth, W.suezNorth, W.crete, W.medCentral,
-                W.gibraltar, W.northAtlanticE
+                W.gibraltar, W.finisterre, W.englishChannelLandsEnd, W.englishChannelDover,
+                W.northAtlanticE
             ],
             'australia|south_africa_east': [
                 W.sydneyApproach, W.goodHopeE, W.mozambique
