@@ -1,45 +1,70 @@
 # 🌊 OceanGuard
 **Ecological Transition Intelligence Platform for Ballast Water Management**
 
-[![Deploy to GitHub Pages](https://github.com/Sansyuh06/b2g-OceanGuard/actions/workflows/deploy.yml/badge.svg)](https://github.com/Sansyuh06/b2g-OceanGuard/actions/workflows/deploy.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-> **Live Demo:** [https://sansyuh06.github.io/b2g-OceanGuard/](https://sansyuh06.github.io/b2g-OceanGuard/)
+> OceanGuard is a practical, route-aware system built to help shipping operators, port planners, and regulators reduce the ecological harm of ballast water discharge.
 
 ---
 
-## 🌍 The Problem
-Commercial shipping transfers **12 billion tonnes** of ballast water annually, moving thousands of invasive marine species across ecosystems. Current governance relies on single-vessel compliance checks, missing the cumulative ecological stress on trade corridors.
+## Problem Statement
+Every day, merchant vessels unload and refill ballast water to maintain stability. That ballast water carries living organisms from one ocean region to another. When these organisms are released in a new environment, they can become invasive, damage fisheries, disrupt native ecosystems, and increase the cost of port operations.
 
-## 🚀 The Solution: OceanGuard
-OceanGuard is a **network-level ecological intelligence platform** that shifts from reaction to prediction. It models biological compatibility, discharge risk, and treatment efficacy across entire maritime routes.
+Existing compliance systems focus on checking individual vessels at a single point in time. They do not answer a larger question: how does a route, a corridor, or a regional shipping network affect the biological and physical risk of a ballast discharge?
 
-### Key Features
-- **🗺️ Interactive Route Risk Map:** Visualizes great-circle routes with real-time risk assessment.
-- **🦠 Organism Survival Simulation:** Predicts invasive species survival probability at destination ports.
-- **🧪 Smart Treatment Advisory:** Recommends specific UV/Chemical treatment parameters based on biological load.
-- **💳 Eco Credit System:** Incentivizes coral protection and safe discharge via behavioral economics.
-- **🌊 Live Marine Data:** Integrates **Open-Meteo API** for real-time Sea Surface Temperature (SST), wave height, and ocean currents.
+### Why this matters
+- Invasive species introductions are one of the top threats to marine biodiversity.
+- Ports are becoming warmer and saltier due to climate change, creating new survival pathways for non-native organisms.
+- Treatment decisions are still often made without enough environmental context.
 
-## 🛠️ Technology Stack
-- **Frontend:** HTML5, CSS3 (Glassmorphism), Vanilla JavaScript (ES6+)
-- **Mapping:** Leaflet.js with custom Sea Route engine
-- **Data Pipeline:** Python + NOAA ERDDAP (WOA23) for oceanographic data
-- **APIs:** Open-Meteo Marine API (Real-time), CartoDB (Basemaps)
-- **Reporting:** jsPDF for instant compliance reports
+## Solution
+OceanGuard combines route planning, environmental intelligence, and treatment advice into one dashboard.
 
-## 📊 Data Sources (Real & Cited)
-- **SST/Salinity:** NOAA World Ocean Atlas 2023 (WOA23)
-- **Invasive Species:** IUCN Global Invasive Species Database (GISD) + Smithsonian NEMESIS
-- **Treatment Effectiveness:** IMO MEPC.300(72) Type Approval Guidelines
-- **Coral Reefs:** Allen Coral Atlas + NOAA Coral Reef Watch
+It helps users:
+- compare route risk between different origin-destination pairs
+- estimate whether discharge conditions are favorable for organism survival
+- suggest treatment intensity and timing based on actual marine data
+- generate a clear compliance-focused report for each route
 
-## 📦 Deployment
-This project naturally deploys to **GitHub Pages**.
+This makes ballast water management less reactive and more adaptive.
 
-1. Go to **Settings > Pages**
-2. Select Source: **GitHub Actions**
-3. Push to `master` to trigger deployment.
+## What OceanGuard Does
+- Visualizes sea routes and port connections on an interactive map
+- Loads marine conditions and port compatibility data to estimate discharge risk
+- Runs survival and treatment models based on route temperature, salinity, and destination port conditions
+- Provides operational recommendations for safer ballast water handling
+- Outputs a summary report that can support decision-making or regulatory review
+
+## Tech Stack
+- **Frontend:** HTML, CSS, and modern JavaScript
+- **Mapping:** Leaflet.js for interactive route and port visualization
+- **Data handling:** JavaScript modules for route scoring, treatment logic, marine API calls, and reporting
+- **Static site hosting:** Built to run on a simple web server or GitHub Pages
+- **Data pipeline:** Python scripts exist for oceanographic data collection and preprocessing
+
+## How It Was Built
+1. **Define the core use case** – determine what a ship operator and compliance officer need from a ballast-water route tool.
+2. **Model risk factors** – use temperature, salinity, route duration, and known invasive species sensitivity to estimate survival risk.
+3. **Build the map interface** – render routes, ports, and risk layers using Leaflet.
+4. **Connect live data** – integrate Open-Meteo for current sea conditions and combine it with preloaded port and treatment datasets.
+5. **Create outcome reports** – generate PDF-style summaries for operators and environmental stakeholders.
+
+## Impact
+OceanGuard is designed to help shipping and coastal management teams:
+- make better discharge decisions before vessels arrive at their destination
+- reduce the spread of invasive species by aligning treatment with actual ocean conditions
+- support a more resilient maritime network through better route-level thinking
+- lower long-term ecological and regulatory costs by acting earlier in the ballast process
+
+## Quick Start
+1. Open `index.html` in a browser or serve the project from a local web server.
+2. Use the map to choose an origin and destination port.
+3. Review the route risk, treatment advice, and generated report.
+
+## Contribution Notes
+- The project is intentionally built as a static web app for broad compatibility.
+- Python scripts in `scripts/` support data collection, but the core user experience runs fully in the browser.
 
 ---
-*Built for the Build2Together Hackathon 2026. Aligned with UN SDG 14: Life Below Water.*
+
+*Built for the Build2Together Hackathon 2026 with a focus on practical marine ecosystem protection.*
